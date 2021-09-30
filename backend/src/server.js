@@ -1,6 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const { MongoClient } = require('mongodb');
+const { MongoClient } = require("mongodb");
 
 const app = express();
 
@@ -16,17 +16,19 @@ const withDB = async (operations, res) => {
     await operations(db);
     client.close();
   } catch (error) {
-    res.status(500).json({ message: "Error contecting to database", error });
+    res.status(500).json({ message: "Error connecting to db", error });
   }
-}
+};
 
 app.get("/api/articles/:name", async (req, res) => {
   withDB(async (db) => {
     const articleName = req.params.name;
+
     const articleInfo = await db
       .collection("articles")
       .findOne({ name: articleName });
     res.status(200).json(articleInfo);
+    client.close();
   }, res);
 });
 
@@ -35,18 +37,21 @@ app.post("/api/articles/:name/add-comments", (req, res) => {
   const articleName = req.params.name;
 
   withDB(async (db) => {
-    const articleInfo = await db.collection('articles').findOne({ name: articleName })
-    await db.collection('articles').updateOne(
-      { name: articleName },
-      {
-        '$set': {
-          comments: articleInfo.comments.concat({ username, text }),
-        },
-      });
-    const updateArticleInfo = await db
+    const articleInfo = await db
       .collection("articles")
       .findOne({ name: articleName });
-    res.status(200).json(updateArticleInfo);
+    await db.collection("articles").updateOne(
+      { name: articleName },
+      {
+        $set: {
+          comments: articleInfo.comments.concat({ username, text }),
+        },
+      }
+    );
+    const updatedArticleInfo = await db
+      .collection("articles")
+      .findOne({ name: articleName });
+    res.status(200).json(updatedArticleInfo);
   }, res);
 });
 
